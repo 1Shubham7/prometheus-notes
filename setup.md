@@ -117,7 +117,7 @@ sudo systemctl status prometheus
 
 ---
 
-Setting up encryption and authentication:
+## Setting up encryption and authentication:
 
 in the target servers
 
