@@ -207,3 +207,66 @@ scrape_configs:
 sudo systemctl restart prometheus
 sudo systemctl status prometheus
 ```
+
+---
+
+### encryption using self signed certs
+
+```
+sudo mkdir -p /etc/node_exporter/certs
+cd /etc/node_exporter/certs
+sudo chown -R node_exporter:node_exporter /etc/node_exporter/certs
+```
+
+```
+openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout node_exporter.key -out node_exporter.crt -subj "/C=US/ST=California/L=Oakland/O=MyOrg/CN=localhost" -addext "subjectAltName = DNS:localhost"
+```
+
+```
+vim /etc/node_exporter/config.yml
+
+basic_auth_users:
+  prometheus: $2y$10$8XdWS3CPSQKVLjlZEqUqWuqCDF77KyxO5WTgcmDAOS/oaVzxobrui
+  
+tls_server_config:
+  cert_file: /etc/node_exporter/certs/node_exporter.crt
+  key_file: /etc/node_exporter/certs/node_exporter.key
+```
+
+```
+sudo systemctl daemon-reload
+sudo systemctl restart node_exporter
+sudo systemctl status node_exporter
+
+```
+
+In promethues
+
+```
+scp root@node02:/etc/node_exporter/certs/node_exporter.crt /etc/prometheus/node_exporter.crt
+chown prometheus.prometheus /etc/prometheus/node_exporter.crt
+```
+
+```
+vim /etc/prometheus/prometheus.yml
+
+- job_name: "nodes"
+    static_configs:
+      - targets: ["node01:9100", "node02:9100"]
+    basic_auth:
+      username: "prometheus"
+      password: "secret-password"
+    scheme: https
+    tls_config:
+        insecure_skip_verify: true
+        ca_file: "/etc/prometheus/node_exporter.crt"
+```
+
+```
+sudo systemctl restart prometheus
+sudo systemctl status prometheus
+```
+
+
+
+
